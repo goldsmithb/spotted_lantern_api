@@ -38,27 +38,29 @@ func (s *Server) Start() {
 		w.Write([]byte("Hello"))
 	})
 
-	s.router.Mount("/kills", KillsRoutes())
+	s.router.Mount("/kills", KillsRoutes(s.api))
 
 	http.ListenAndServe(":3000", s.router)
 }
 
 /////////////////// // // / / /  Handle Kills
 
-type KillsHandler struct{}
+type KillsHandler struct {
+	api core.API
+}
 
 func (k *KillsHandler) GetKills(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "100 Kills")
+	fmt.Fprintf(w, string(k.api.GetAllKills()))
 }
 
 func (k *KillsHandler) GetKill(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	fmt.Fprintf(w, "10 Kills for %s", id)
+	fmt.Fprintf(w, string(k.api.GetKills(id)))
 }
 
-func KillsRoutes() chi.Router {
+func KillsRoutes(api core.API) chi.Router {
 	r := chi.NewRouter()
-	killsHandler := KillsHandler{}
+	killsHandler := KillsHandler{api: api}
 	r.Get("/", killsHandler.GetKills)
 	r.Get("/{id}", killsHandler.GetKill)
 	return r
