@@ -1,18 +1,25 @@
 package api
 
+import (
+	"github.com/goldsmithb/spotted_lantern_api/core"
+	"github.com/goldsmithb/spotted_lantern_api/storage"
+)
+
 // Implements core.API
-
-type API struct {
+type api struct {
+	dbClient core.DbClient
 }
 
-func NewAPI() *API {
-	return &API{}
+func NewAPI() *api {
+	return &api{
+		dbClient: storage.NewDbClient(),
+	}
 }
 
-func (a *API) GetAllKills() int {
-	return 3000
+func (a *api) GetKills(id string) int {
+	return a.dbClient.GetKillCount(id)
 }
 
-func (a *API) GetKills(_ string) int {
-	return 1
+func (a *api) GetAllKills() int {
+	return a.dbClient.GetAllKills()
 }
