@@ -1,18 +1,20 @@
 package api
 
 import (
+	"github.com/goldsmithb/spotted_lantern_api/config"
 	"github.com/goldsmithb/spotted_lantern_api/core"
-	"github.com/goldsmithb/spotted_lantern_api/storage"
 )
 
 // Implements core.API
 type api struct {
+	config   *config.Config
 	dbClient core.DbClient
 }
 
-func NewAPI() *api {
+func NewAPI(conf *config.Config, db core.DbClient) *api {
 	return &api{
-		dbClient: storage.NewDbClient(),
+		config:   conf,
+		dbClient: db,
 	}
 }
 

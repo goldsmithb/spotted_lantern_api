@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/goldsmithb/spotted_lantern_api/config"
 	"github.com/goldsmithb/spotted_lantern_api/core"
 	"go.uber.org/zap"
 	"net/http"
@@ -12,20 +13,21 @@ import (
 
 type Server struct {
 	logger *zap.Logger
+	config *config.Config
 	api    core.API
 	router *chi.Mux
 }
 
-func NewServer(logger *zap.Logger, api core.API) *Server {
+func NewServer(logger *zap.Logger, conf *config.Config, api core.API) *Server {
 	return &Server{
 		logger: logger,
+		config: conf,
 		api:    api,
 		router: chi.NewRouter(),
 	}
 }
 
 func (s *Server) Start() {
-
 	// Set Middleware
 	s.router.Use(middleware.Logger)
 	s.router.Use(middleware.Recoverer)

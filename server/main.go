@@ -2,33 +2,29 @@ package main
 
 import (
 	"fmt"
-	"github.com/eaigner/jet"
 	"github.com/goldsmithb/spotted_lantern_api/api"
+	"github.com/goldsmithb/spotted_lantern_api/config"
+	"github.com/goldsmithb/spotted_lantern_api/storage"
 	_ "github.com/lib/pq"
 )
 
 func main() {
 	fmt.Println("Hello")
 
-	server := NewServer(nil, api.NewAPI())
-	go server.Start()
-
-	db, err := jet.Open("postgres", "postgres://ktpsvtav:gNpwtW_yxBDNc3kbTyj3_nBjyPs9fWBh@isilo.db.elephantsql.com/ktpsvtav?sslmode=require")
+	c, err := config.New("config.yaml", nil)
 	if err != nil {
-		fmt.Println(err)
-	}
-	defer db.Close()
-	err = db.Ping()
-	if err == nil {
-		fmt.Println(":)")
-	}
-	var rows []*struct {
-		Id       string
-		Username string
-		Email    string
-		Passkey  string
-		Score    int
+		panic(err)
 	}
 
-	db.Query("select * from users").Rows(&rows)
+	db := storage.NewDbClient(c)
+	err = db.Connect()
+	if err != nil {
+		panic(err)
+	}
+
+	service := api.NewAPI(c, db)
+
+	server := NewServer(nil, c, service)
+	server.Start()
+
 }

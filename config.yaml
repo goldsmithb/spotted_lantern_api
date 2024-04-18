@@ -1,0 +1,12 @@
+service:
+  http_port: 3000
+  current_environment: dev
+database:
+  url: postgres://ktpsvtav:gNpwtW_yxBDNc3kbTyj3_nBjyPs9fWBh@isilo.db.elephantsql.com/ktpsvtav
+  host: isilo.db.elephantsql.com
+  port: 5432
+  default_db: ktpsvtav
+  username: ktpsvtav
+  password: gNpwtW_yxBDNc3kbTyj3_nBjyPs9fWBh
+  ssl_mode: verify-full       # https://jdbc.postgresql.org/documentation/ssl/#configuring-the-client
+  connect_timeout: 60
