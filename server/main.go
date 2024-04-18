@@ -6,12 +6,20 @@ import (
 	"github.com/goldsmithb/spotted_lantern_api/config"
 	"github.com/goldsmithb/spotted_lantern_api/storage"
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
+	"log"
 )
 
 func main() {
-	fmt.Println("Hello")
+	fmt.Println("Initializing Lantern Fly API")
+	// create zap logger!
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatalf("can't initialize zap logger: %v", err)
+	}
+	defer logger.Sync()
 
-	c, err := config.New("config.yaml", nil)
+	c, err := config.New("config.yaml", logger)
 	if err != nil {
 		panic(err)
 	}
@@ -24,7 +32,7 @@ func main() {
 
 	service := api.NewAPI(c, db)
 
-	server := NewServer(nil, c, service)
+	server := NewServer(logger, c, service)
 	server.Start()
 
 }

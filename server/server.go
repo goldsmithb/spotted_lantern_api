@@ -42,7 +42,8 @@ func (s *Server) Start() {
 
 	s.router.Mount("/kills", KillsRoutes(s.api))
 
-	http.ListenAndServe(":3000", s.router)
+	s.logger.Info("Starting server on port " + s.config.Options.Service.HttpPort)
+	http.ListenAndServe(":"+s.config.Options.Service.HttpPort, s.router)
 }
 
 /////////////////// // // / / /  Handle Kills

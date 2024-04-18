@@ -1,5 +1,5 @@
 service:
-  http_port: 3000
+  http_port: 8080
   current_environment: dev
 database:
   url: postgres://ktpsvtav:gNpwtW_yxBDNc3kbTyj3_nBjyPs9fWBh@isilo.db.elephantsql.com/ktpsvtav
