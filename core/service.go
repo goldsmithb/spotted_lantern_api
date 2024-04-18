@@ -10,11 +10,11 @@ type User struct {
 
 // Defines the contract for the Lantern Fly API
 type API interface {
-	GetAllKills() int
-	GetKills(id string) int
+	GetAllKills() ([]int, error)
+	GetKills(id string) (int, error)
 }
 
 type DbClient interface {
-	GetAllKills() int
-	GetKillCount(userId string) int
+	GetAllKills() ([]int, error)
+	GetKillCount(userId string) (int, error)
 }

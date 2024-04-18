@@ -8,6 +8,7 @@ import (
 	"github.com/goldsmithb/spotted_lantern_api/core"
 	"go.uber.org/zap"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -53,12 +54,29 @@ type KillsHandler struct {
 }
 
 func (k *KillsHandler) GetKills(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, string(k.api.GetAllKills()))
+	res, err := k.api.GetAllKills()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	total := 0
+	for _, v := range res {
+		total += v
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, strconv.Itoa(total))
 }
 
 func (k *KillsHandler) GetKill(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	fmt.Fprintf(w, string(k.api.GetKills(id)))
+	total, err := k.api.GetKills(id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, strconv.Itoa(total))
 }
 
 func KillsRoutes(api core.API) chi.Router {

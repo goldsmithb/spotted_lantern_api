@@ -44,18 +44,30 @@ func (db *dbClient) Connect() error {
 	return nil
 }
 
-func (db *dbClient) GetAllKills() int {
-	return 100
+func (db *dbClient) GetAllKills() ([]int, error) {
+	scores := make([]int, 0)
+	rows, err := db.cxn.Query(`SELECT score FROM users`)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var score int
+		err = rows.Scan(&score)
+		if err != nil {
+			return nil, err
+		}
+		scores = append(scores, score)
+	}
+	return scores, nil
 }
 
-func (db *dbClient) GetKillCount(userId string) int {
+func (db *dbClient) GetKillCount(userId string) (int, error) {
 	//query := `-- SELECT * FROM users WHERE id = $1`
 	var score int
 	row := db.cxn.QueryRow(`SELECT score FROM users WHERE id=$1`, userId)
 	err := row.Scan(&score)
-	if err == nil {
-		return score
+	if err != nil {
+		return -1, err
 	}
-	//rows, _ := db.cxn.Query(query, userId)
-	return 10000
+	return score, nil
 }

@@ -18,10 +18,10 @@ func NewAPI(conf *config.Config, db core.DbClient) *api {
 	}
 }
 
-func (a *api) GetKills(id string) int {
-	return a.dbClient.GetKillCount(id)
+func (a *api) GetAllKills() ([]int, error) {
+	return a.dbClient.GetAllKills()
 }
 
-func (a *api) GetAllKills() int {
-	return a.dbClient.GetAllKills()
+func (a *api) GetKills(id string) (int, error) {
+	return a.dbClient.GetKillCount(id)
 }
