@@ -50,7 +50,12 @@ func (db *dbClient) GetAllKills() int {
 
 func (db *dbClient) GetKillCount(userId string) int {
 	//query := `-- SELECT * FROM users WHERE id = $1`
-
+	var score int
+	row := db.cxn.QueryRow(`SELECT score FROM users WHERE id=$1`, userId)
+	err := row.Scan(&score)
+	if err == nil {
+		return score
+	}
 	//rows, _ := db.cxn.Query(query, userId)
-	return 10
+	return 10000
 }
