@@ -24,4 +24,5 @@ type DbClient interface {
 	GetAllKills() ([]int, error)
 	GetKillCount(userId string) (int, error)
 	GetAllUsers() ([]User, error)
+	GetHashForEmail(email string) (string, error)
 }

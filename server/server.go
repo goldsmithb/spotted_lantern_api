@@ -48,6 +48,7 @@ func (s *Server) Start() {
 
 	s.router.Post("/signup", s.handleSignUp)
 	s.router.Get("/users", s.getAllUsers)
+	s.router.Post("/signin", s.handleSignIn)
 	s.router.Mount("/kills", KillsRoutes(s.api, s.db))
 
 	s.logger.Info("Starting server on port " + s.config.Options.Service.HttpPort)
@@ -95,6 +96,39 @@ func (s *Server) handleSignUp(w http.ResponseWriter, r *http.Request) {
 	newUserData.UserId = uuid.New()
 	// store in db
 	err = s.db.CreateUser(newUserData)
+	w.WriteHeader(http.StatusOK)
+}
+
+// request json:
+// {
+// "Email":"newuser@new.clom",
+// "Passkey":"password"
+// }
+func (s *Server) handleSignIn(w http.ResponseWriter, r *http.Request) {
+	type signInData struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var reqData signInData
+	err := json.NewDecoder(r.Body).Decode(&reqData)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if !s.api.CheckUserExists(reqData.Email) {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Email not registered with api")
+		return
+	}
+
+	hash, err := s.db.GetHashForEmail(reqData.Email)
+	if !CheckPasswordHash(reqData.Password, hash) {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Invalid password")
+	}
+
+	// issue JWT token
+
 	w.WriteHeader(http.StatusOK)
 }
 

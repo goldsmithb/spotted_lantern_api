@@ -52,6 +52,17 @@ func (db *dbClient) GetUserByEmail(email string) (*core.User, error) {
 	return &user, nil
 }
 
+func (db *dbClient) GetHashForEmail(email string) (string, error) {
+	var hash string
+	const q = `SELECT hash FROM lanternfly.users WHERE email = $1`
+	row := db.cxn.QueryRow(q, email)
+	err := row.Scan(&hash)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
+}
+
 func (db *dbClient) CreateUser(user core.User) error {
 	const query = `INSERT INTO lanternfly.users (user_id, username, email, hash, score ) 
 			VALUES ($1, $2, $3, $4, $5)`
