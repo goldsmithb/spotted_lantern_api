@@ -4,22 +4,26 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/goldsmithb/spotted_lantern_api/config"
+	"github.com/goldsmithb/spotted_lantern_api/core"
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
 // implements core.dbClient
 type dbClient struct {
 	config *config.Config
+	logger *zap.Logger
 	cxn    *sql.DB
 }
 
-func NewDbClient(conf *config.Config) *dbClient {
+func NewDbClient(conf *config.Config, l *zap.Logger) *dbClient {
 	return &dbClient{
 		config: conf,
+		logger: l,
 	}
 }
 
-func (db *dbClient) DisConnect() error {
+func (db *dbClient) Disconnect() error {
 	return db.cxn.Close()
 }
 
@@ -31,22 +35,55 @@ func (db *dbClient) Connect() error {
 
 	database, err := sql.Open("postgres", connStr)
 	if err != nil {
-		fmt.Println(err)
-	}
-
-	err = database.Ping()
-	if err == nil {
-		fmt.Println("pinged db successfully :)")
-	} else {
-		fmt.Println("no ping db :(")
+		db.logger.Fatal("Failed to connect to database", zap.Error(err))
+		return err
 	}
 	db.cxn = database
 	return nil
 }
 
+func (db *dbClient) GetUserByEmail(email string) (*core.User, error) {
+	var user core.User
+	row := db.cxn.QueryRow(`SELECT * FROM lanternfly.users WHERE email = $1`, email)
+	err := row.Scan(&user.UserId, &user.Username, &user.Email, &user.Hash, &user.Score)
+	if err != nil {
+		return &user, err
+	}
+	return &user, nil
+}
+
+func (db *dbClient) CreateUser(user core.User) error {
+	const query = `INSERT INTO lanternfly.users (user_id, username, email, hash, score ) 
+			VALUES ($1, $2, $3, $4, $5)`
+	res, err := db.cxn.Exec(query, user.UserId, user.Username, user.Email, user.Hash, user.Score)
+	if err != nil {
+		return err
+	}
+	fmt.Println(res)
+	return nil
+}
+
+func (db *dbClient) GetAllUsers() ([]core.User, error) {
+	const q = `SELECT * FROM lanternfly.users`
+	users := make([]core.User, 0)
+	rows, err := db.cxn.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var user core.User
+		err = rows.Scan(&user.UserId, &user.Username, &user.Email, &user.Hash, &user.Score)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
 func (db *dbClient) GetAllKills() ([]int, error) {
 	scores := make([]int, 0)
-	rows, err := db.cxn.Query(`SELECT score FROM users`)
+	rows, err := db.cxn.Query(`SELECT score FROM lanternfly.users`)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +101,7 @@ func (db *dbClient) GetAllKills() ([]int, error) {
 func (db *dbClient) GetKillCount(userId string) (int, error) {
 	//query := `-- SELECT * FROM users WHERE id = $1`
 	var score int
-	row := db.cxn.QueryRow(`SELECT score FROM users WHERE id=$1`, userId)
+	row := db.cxn.QueryRow(`SELECT score FROM lanternfly.users WHERE user_id=$1`, userId)
 	err := row.Scan(&score)
 	if err != nil {
 		return -1, err

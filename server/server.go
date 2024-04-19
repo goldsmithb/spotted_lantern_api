@@ -1,12 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/goldsmithb/spotted_lantern_api/config"
 	"github.com/goldsmithb/spotted_lantern_api/core"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
 	"time"
@@ -16,14 +19,16 @@ type Server struct {
 	logger *zap.Logger
 	config *config.Config
 	api    core.API
+	db     core.DbClient
 	router *chi.Mux
 }
 
-func NewServer(logger *zap.Logger, conf *config.Config, api core.API) *Server {
+func NewServer(logger *zap.Logger, conf *config.Config, api core.API, db core.DbClient) *Server {
 	return &Server{
 		logger: logger,
 		config: conf,
 		api:    api,
+		db:     db,
 		router: chi.NewRouter(),
 	}
 }
@@ -41,16 +46,72 @@ func (s *Server) Start() {
 		w.Write([]byte("Hello"))
 	})
 
-	s.router.Mount("/kills", KillsRoutes(s.api))
+	s.router.Post("/signup", s.handleSignUp)
+	s.router.Get("/users", s.getAllUsers)
+	s.router.Mount("/kills", KillsRoutes(s.api, s.db))
 
 	s.logger.Info("Starting server on port " + s.config.Options.Service.HttpPort)
 	http.ListenAndServe(":"+s.config.Options.Service.HttpPort, s.router)
+}
+
+func KillsRoutes(api core.API, db core.DbClient) chi.Router {
+	r := chi.NewRouter()
+	killsHandler := KillsHandler{api: api, db: db}
+	r.Get("/", killsHandler.GetKills)
+	r.Get("/{id}", killsHandler.GetKill)
+	return r
+}
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+// request json:
+// {
+// "Username": "newuser",
+// "Email":"newuser@new.clom",
+// "Passkey":"password"
+// }
+func (s *Server) handleSignUp(w http.ResponseWriter, r *http.Request) {
+	var newUserData core.User
+	err := json.NewDecoder(r.Body).Decode(&newUserData)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if s.api.CheckUserExists(newUserData.Email) {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "email alread registered")
+		return
+	}
+	hash, err := HashPassword(newUserData.Hash)
+	newUserData.Hash = hash
+	newUserData.UserId = uuid.New()
+	// store in db
+	err = s.db.CreateUser(newUserData)
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) getAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := s.db.GetAllUsers()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	json.NewEncoder(w).Encode(users)
+	w.WriteHeader(http.StatusOK)
 }
 
 /////////////////// // // / / /  Handle Kills
 
 type KillsHandler struct {
 	api core.API
+	db  core.DbClient
 }
 
 func (k *KillsHandler) GetKills(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +124,6 @@ func (k *KillsHandler) GetKills(w http.ResponseWriter, r *http.Request) {
 	for _, v := range res {
 		total += v
 	}
-
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, strconv.Itoa(total))
 }
@@ -77,12 +137,4 @@ func (k *KillsHandler) GetKill(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, strconv.Itoa(total))
-}
-
-func KillsRoutes(api core.API) chi.Router {
-	r := chi.NewRouter()
-	killsHandler := KillsHandler{api: api}
-	r.Get("/", killsHandler.GetKills)
-	r.Get("/{id}", killsHandler.GetKill)
-	return r
 }

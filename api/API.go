@@ -18,6 +18,17 @@ func NewAPI(conf *config.Config, db core.DbClient) *api {
 	}
 }
 
+func (a *api) CheckUserExists(email string) bool {
+	res, err := a.dbClient.GetUserByEmail(email)
+	if err != nil {
+		return false
+	}
+	if res.Email == email {
+		return true
+	}
+	return false
+}
+
 func (a *api) GetAllKills() ([]int, error) {
 	return a.dbClient.GetAllKills()
 }

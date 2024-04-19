@@ -24,7 +24,7 @@ func main() {
 		panic(err)
 	}
 
-	db := storage.NewDbClient(c)
+	db := storage.NewDbClient(c, logger)
 	err = db.Connect()
 	if err != nil {
 		panic(err)
@@ -32,7 +32,7 @@ func main() {
 
 	service := api.NewAPI(c, db)
 
-	server := NewServer(logger, c, service)
+	server := NewServer(logger, c, service, db)
 	server.Start()
 
 }
